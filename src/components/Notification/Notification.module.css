@@ -1,0 +1,7 @@
+.message {
+  display: flex;
+  text-transform: uppercase;
+  justify-content: center;
+  font-size: 14px;
+  color: #fff;
+}

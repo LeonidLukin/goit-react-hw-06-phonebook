@@ -1,0 +1,19 @@
+.item {
+  margin-bottom: 15px;
+}
+
+.item:last-child {
+  margin-bottom: 0;
+}
+
+.text {
+  color: white;
+  font-size: 25px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.value {
+  margin-left: 10px;
+  color: #fff;
+}
