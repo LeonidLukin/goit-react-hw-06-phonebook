@@ -1,146 +1,96 @@
-import { useState } from 'react';
-import Section from './Section/Section';
-import Statistics from './Statistics/Statistics';
-import FeedbackOptions from './FeedbackOptions/FeedbackOptions';
-import Notification from './Notification/Notification';
+import { useEffect, useState } from 'react';
+import { nanoid } from 'nanoid';
+import { Report } from 'notiflix/build/notiflix-report-aio';
+import { BsFillPersonPlusFill } from 'react-icons/bs';
+import ContactForm from './ContactForm';
+import ContactList from './ContactList';
+import Filter from './Filter/Filter';
+import Message from './Message';
+import Modal from './Modal'
 import css from './App.module.css';
 
 export default function App() {
-  const [good, setGood] = useState(0);
-  const [neutral, setNeutral] = useState(0);
-  const [bad, setBad] = useState(0);
+  const [contacts, setContacts] = useState([])
+  const [filter, setFilter] = useState('')
+  const [showModal, setShowModal] = useState(false)
 
-  const handleClickButton = e => {
-    const option = e.target.name;
+  useEffect(() => {
+    const contacts = localStorage.getItem('contacts')
+    const parsedContacts = JSON.parse(contacts);
 
-    switch (option) {
-      case 'good':
-        setGood(prevState => prevState + 1);
-        break;
-      case 'neutral':
-        setNeutral(prevState => prevState + 1);
-        break;
-      case 'bad':
-        setBad(prevState => prevState + 1);
-        break;
-      default:
-        break;
-    }
-  }
+    parsedContacts ? setContacts(parsedContacts) : setContacts([]);
+  }, [])
 
-  const countTotalFeedback = () => good + neutral + bad;
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  const countPositiveFeedback = () => {
-    const totalFeedback = countTotalFeedback();
-    const goodFeedback = good;
-    let result = 0;
+  const addContact = ({ name, number }) => {
+    const newContact = { id: nanoid(), name, number };
 
-    if (totalFeedback) {
-      result = Math.ceil((goodFeedback / totalFeedback) * 100);
-    }
+    contacts.some(contact => contact.name === name)
+      ? Report.warning(
+        `${name}`,
+        'This user is already in the contact list.',
+        'OK',
+      )
+      : setContacts(prevContacts => [newContact, ...prevContacts]);
 
-    return `${result}%`;
+    toggleModal();
+  };
+
+  const deleteContact = contactId => {
+    setContacts(prevContacts =>
+      prevContacts.filter(contact => contact.id !== contactId),
+    );
+  };
+
+  const changeFilter = e => setFilter(e.currentTarget.value);
+
+  const getFilteredContact = filtered => {
+    const normalaizedFilter = filter.toLowerCase();
+
+    const active = filtered ? filtered : contacts;
+
+    return active.filter(contact => {
+      return (
+        contact.name.toLowerCase().includes(normalaizedFilter) ||
+        contact.number.includes(filter)
+      );
+    });
+  };
+
+  const filteredContact = getFilteredContact();
+
+  const toggleModal = () => {
+    setShowModal(prevShowModal => !prevShowModal);
   };
 
   return (
     <div className={css.container}>
-      <div className={css.wrapper}>
-        <Section title="Please leave feedback">
-          <FeedbackOptions
-            options={['good', 'neutral', 'bad']}
-            onLeaveFeedback={handleClickButton}
-          />
-        </Section>
+      <h1 className={css.title}>
+        Phone<span className={css.title__color}>book</span>
+      </h1>
+      <button className={css.button} type="button" onClick={toggleModal}>
+        <span className={css.button__text}>Add new contact</span>{' '}
+        <BsFillPersonPlusFill size={20} />
+      </button>
+      {showModal && (
+        <Modal onClose={toggleModal} title="add contact">
+          <ContactForm onSubmit={addContact} />
+        </Modal>
+      )}
 
-        <Section title="Statistics">
-          {countTotalFeedback() ? (
-            <Statistics
-              good={good}
-              neutral={neutral}
-              bad={bad}
-              total={countTotalFeedback()}
-              positivePercentage={countPositiveFeedback()}
-            />
-          ) : (
-            <Notification message="There is no feedback" />
-          )}
-        </Section>
-      </div>
+      <h2 className={css.subtitle}>Contacts</h2>
+      <Filter filter={filter} changeFilter={changeFilter} />
+      {contacts.length > 0 ? (
+        <ContactList
+          contacts={filteredContact}
+          onDeleteContact={deleteContact}
+        />
+      ) : (
+        <Message text="Contact list is empty." />
+      )}
     </div>
   );
-};
-
-// class oldApp extends Component {
-//   state = {
-//     good: 0,
-//     neutral: 0,
-//     bad: 0,
-//   };
-
-//   handleClickButton = e => {
-//     const option = e.target.name;
-
-//     if (option) {
-//       this.setState(prevState => ({ [option]: prevState[option] + 1 }));
-//     }
-//   };
-
-//   // countTotalFeedback = () => {
-//   //   const { good, neutral, bad } = this.state;
-//   //   return good + neutral + bad;
-//   // };
-
-//   countTotalFeedback = () => {
-//     // Это подходит только в том случае, если в будущем в наш STATE ничего не будет добавляться. 
-//     return Object.values(this.state).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
-//   };
-
-//   countPositiveFeedback = () => {
-//     const totalFeedback = this.countTotalFeedback();
-//     const goodFeedback = this.state.good;
-//     let result = 0;
-
-//     if (totalFeedback) {
-//       result = Math.ceil((goodFeedback / totalFeedback) * 100);
-//     }
-
-//     return `${result}%`;
-//   };
-
-//   render() {
-//     const { good, neutral, bad } = this.state;
-//     const countTotalFeedback = this.countTotalFeedback();
-//     const countPositiveFeedbackPercentage = this.countPositiveFeedback();
-//     const options = Object.keys(this.state);
-//     const handleClickButton = this.handleClickButton;
-
-//     return (
-//       <div className={css.container}>
-//         <div className={css.wrapper}>
-//           <Section title="Please leave feedback">
-//             <FeedbackOptions
-//               options={options}
-//               onLeaveFeedback={handleClickButton}
-//             />
-//           </Section>
-
-//           <Section title="Statistics">
-//             {countTotalFeedback > 0 ? (
-//               <Statistics
-//                 good={good}
-//                 neutral={neutral}
-//                 bad={bad}
-//                 total={countTotalFeedback}
-//                 positivePercentage={countPositiveFeedbackPercentage}
-//               />
-//             ) : (
-//               <Notification message="There is no feedback" />
-//             )}
-//           </Section>
-//         </div>
-//       </div>
-//     );
-//   }
-// }
-
-// export default App;
+}

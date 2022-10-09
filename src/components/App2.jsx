@@ -1,75 +1,113 @@
 import { Component } from 'react';
-import Section from './Section/Section';
-import Statistics from './Statistics/Statistics';
-import FeedbackOptions from './FeedbackOptions/FeedbackOptions';
-import Notification from './Notification/Notification';
+import { nanoid } from 'nanoid';
+import { Report } from 'notiflix/build/notiflix-report-aio';
+import { BsFillPersonPlusFill } from 'react-icons/bs';
+import ContactForm from './ContactForm';
+import ContactList from './ContactList';
+import Filter from './Filter/Filter';
+import Message from './Message';
+import Modal from './Modal'
 import css from './App.module.css';
 
-class App extends Component {
+
+class oldApp extends Component {
     state = {
-        good: 0,
-        neutral: 0,
-        bad: 0,
+        contacts: [],
+        filter: '',
+        showModal: false,
     };
 
-    handleClickButton = e => {
-        const option = e.target.name;
+    componentDidMount() {
+        const contacts = localStorage.getItem('contacts')
+        const parsedContacts = JSON.parse(contacts);
 
-        if (option) {
-            this.setState(prevState => ({ [option]: prevState[option] + 1 }));
+        if (parsedContacts) {
+            this.setState({ contacts: parsedContacts })
         }
-    };
+    }
 
-    countTotalFeedback = () => {
-        return Object.values(this.state).reduce((previousValue, currentValue) => previousValue + currentValue, 0)
-    };
+    componentDidUpdate(prevProps, prevState) {
+        if (this.state.contacts !== prevState.contacts) {
+            console.log('Обновилось поле контакты');
 
-    countPositiveFeedback = () => {
-        const totalFeedback = this.countTotalFeedback();
-        const goodFeedback = this.state.good;
-        let result = 0;
-
-        if (totalFeedback) {
-            result = Math.ceil((goodFeedback / totalFeedback) * 100);
+            localStorage.setItem('contacts', JSON.stringify(this.state.contacts))
         }
+    }
 
-        return `${result}%`;
+    addContact = ({ name, number }) => {
+        const { contacts } = this.state;
+        const newContact = { id: nanoid(), name, number };
+
+        contacts.some(contact => contact.name === name)
+            ? Report.warning(
+                `${name}`,
+                'This user is already in the contact list.',
+                'OK'
+            )
+            : this.setState(({ contacts }) => ({
+                contacts: [newContact, ...contacts],
+            }));
     };
+
+    deleteContact = contactId => {
+        this.setState(prevState => ({
+            contacts: prevState.contacts.filter(contact => contact.id !== contactId),
+        }));
+    };
+
+    changeFilter = e => {
+        this.setState({ filter: e.currentTarget.value });
+    };
+
+    filtredContacts = () => {
+        const { filter, contacts } = this.state;
+        const normalizedFilter = filter.toLowerCase();
+        return contacts.filter(({ name }) =>
+            name.toLowerCase().includes(normalizedFilter)
+        );
+    };
+
+    toggleModal = () => {
+        this.setState(({ showModal }) => ({ showModal: !showModal }))
+    }
 
     render() {
-        const { good, neutral, bad } = this.state;
-        const countTotalFeedback = this.countTotalFeedback();
-        const countPositiveFeedbackPercentage = this.countPositiveFeedback();
-        const options = Object.keys(this.state);
-        const handleClickButton = this.handleClickButton;
+        const { filter, showModal } = this.state;
+        const addContact = this.addContact;
+        const changeFilter = this.changeFilter;
+        const filtredContacts = this.filtredContacts();
+        const deleteContact = this.deleteContact;
+        const length = this.state.contacts.length;
+        const toggleModal = this.toggleModal;
 
         return (
             <div className={css.container}>
-                <div className={css.wrapper}>
-                    <Section title="Please leave feedback">
-                        <FeedbackOptions
-                            options={options}
-                            onLeaveFeedback={handleClickButton}
-                        />
-                    </Section>
+                <h1 className={css.title}>
+                    Phone<span className={css.title__color}>book</span>
+                </h1>
+                <button className={css.button} type="button" onClick={toggleModal}>
+                    <span className={css.button__text}>Add new contact</span>{' '}
+                    <BsFillPersonPlusFill size={20} />
+                </button>
+                {showModal && (
+                    <Modal onClose={toggleModal} title="add contact">
+                        <ContactForm onSubmit={addContact} />
+                    </Modal>
+                )}
 
-                    <Section title="Statistics">
-                        {countTotalFeedback > 0 ? (
-                            <Statistics
-                                good={good}
-                                neutral={neutral}
-                                bad={bad}
-                                total={countTotalFeedback}
-                                positivePercentage={countPositiveFeedbackPercentage}
-                            />
-                        ) : (
-                            <Notification message="There is no feedback" />
-                        )}
-                    </Section>
-                </div>
+                <h2 className={css.subtitle}>Contacts</h2>
+                <Filter filter={filter} changeFilter={changeFilter} />
+                {length > 0 ? (
+                    <ContactList
+                        contacts={filtredContacts}
+                        onDeleteContact={deleteContact}
+                    />
+                ) : (
+                    <Message text="Contact list is empty." />
+                )}
             </div>
         );
     }
 }
 
-export default App;
+// export default App;

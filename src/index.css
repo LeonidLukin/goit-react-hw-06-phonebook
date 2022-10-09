@@ -8,9 +8,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  background-image: url('./images/bgFeedback.jpg');
-  background-size: 100%;
+  background-color: #f16a4d;
+  background-image: url('./images/bgHeader.jpg');
+  background-position: center;
   background-repeat: no-repeat;
+  background-size: cover;
+  height: 100vh;
+  
 }
 
 code {
