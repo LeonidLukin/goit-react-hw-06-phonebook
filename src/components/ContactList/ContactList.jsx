@@ -1,35 +1,41 @@
-import PropTypes from 'prop-types';
+import { useSelector, useDispatch } from 'react-redux';
+import { deleteContact } from '../../redux/contactsSlice';
 import Contact from '../Contact';
 import css from './ContactList.module.css';
+import { FaTrash } from "react-icons/fa";
 
-function ContactList({ contacts, onDeleteContact }) {
+
+export default function ContactList() {
+    const contacts = useSelector(state => state.root.contacts);
+    const filter = useSelector(state => state.root.filter);
+    const dispatch = useDispatch();
+
+    const filteredContacts = () => {
+        const normalizedFilter = filter?.toLowerCase();
+
+        return contacts.filter(contact =>
+            contact.name.toLowerCase().includes(normalizedFilter)
+        );
+    };
+
+    const contactsList = filteredContacts();
+
     return (
         <ul>
-            {contacts.map(({ id, name, number }) => {
+            {contactsList.map(({ id, name, number }) => {
                 return (
                     <li className={css.item} key={id}>
                         <Contact
                             name={name}
                             number={number}
-                            onDeleteContact={onDeleteContact}
                             contactId={id}
-                        />
+                        >
+                            <FaTrash  onClick={() => dispatch(deleteContact(id))}/>
+                        </Contact>
                     </li>
+
                 )
             })}
         </ul>
     )
 }
-
-ContactList.propTypes = {
-    contacts: PropTypes.arrayOf(
-        PropTypes.shape({
-            id: PropTypes.string,
-            name: PropTypes.string,
-            number: PropTypes.string,
-        })
-    ).isRequired,
-    onDeleteContact: PropTypes.func.isRequired,
-};
-
-export default ContactList;
